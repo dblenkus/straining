@@ -21,7 +21,9 @@ setuptools.setup(
     author_email=about['__email__'],
     url=about['__url__'],
     license=about['__license__'],
-    packages=find_packages(exclude=['tests', 'tests.*', '*.tests', '*.tests.*']),
+    packages=setuptools.find_packages(
+        exclude=['tests', 'tests.*', '*.tests', '*.tests.*']
+    ),
     python_requires='>=3.6, <3.8',
     install_requires=[
         'asgiref~=2.3.0',
@@ -30,10 +32,21 @@ setuptools.setup(
         'Django~=2.1.0',
         'django-fernet-fields==0.5',
         'djangorestframework~=3.9.0',
+        'psycopg2>=2.5.0',
         'requests~=2.19.1',
     ],
     extras_require={
+        'docs': ['Sphinx', 'sphinx_rtd_theme'],
         'package': ['twine', 'wheel'],
+        'test': [
+            'check-manifest',
+            'coverage>=4.2',
+            'pycodestyle~=2.4.0',
+            'pydocstyle~=3.0.0',
+            'pylint~=2.1.0',
+            'readme_renderer',
+            'isort',
+        ],
     },
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

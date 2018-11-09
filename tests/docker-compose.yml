@@ -1,0 +1,14 @@
+#
+# Development configuration of dependent services for Docker Compose.
+#
+postgresql:
+    image: postgres:10
+    environment:
+        POSTGRES_USER: straining
+        POSTGRES_DB: straining
+    ports:
+        - "5432:5432"
+redis:
+    image: redis:3.2
+    ports:
+        - "6379:6379"

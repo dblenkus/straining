@@ -1,0 +1,130 @@
+# Global Travis CI step definitions that will be used by all jobs unless
+# explicitly overriden in the jobs.include matrix.
+
+language: python
+
+branches:
+  only:
+    - master
+    - ^\d+\.\d+\.\d+
+
+# We need to be able to install packages.
+sudo: required
+python: "3.6"
+
+services:
+  - redis-server
+
+addons:
+  # NOTE: We need to use the postgresql addon since the default PostgreSQL
+  # service provided on Trusty machines is PostgreSQL 9.2.
+  postgresql: "10"
+  apt:
+    packages:
+    - postgresql-10
+    - postgresql-client-10
+
+before_install:
+  # NOTE: We need to manually reconfigure PostgreSQL 10 since Travis CI doesn't
+  # provide standard configuration out-of-the-box.
+  # For more details, see:
+  # https://github.com/travis-ci/travis-ci/issues/8537#issuecomment-416467506
+  - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf
+  - sudo cp /etc/postgresql/{9.6,10}/main/pg_hba.conf
+  - sudo service postgresql restart
+
+  # NOTE: We need to manually install ElasticSearch since we want to control
+  # the exact version we use instead of relying on the version shipped by
+  # Travis CI's python image.
+  - curl -sSL -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.6.10.deb
+  - sudo dpkg -i --force-confnew elasticsearch-5.6.10.deb
+  - sudo service elasticsearch restart
+
+install: pip install tox
+
+script: tox -e $TOX_ENV
+
+after_success:
+  - pip install codecov
+  - codecov -e TOX_ENV
+
+# Build stages.
+jobs:
+  include:
+    - stage: test
+      env:
+        - TOX_ENV=py36
+        # Set environment variables with information how to use the required
+        # services.
+        - STRAINING_POSTGRESQL_USER=postgres
+        - STRAINING_POSTGRESQL_PORT=5432
+        - STRAINING_REDIS_PORT=6379
+
+    # NOTE: We undo almost all global Travis CI step definitions to ensure the
+    # following Tox environments are run without access to any service.
+    - stage: test
+      env: TOX_ENV=docs
+      services: []
+      addons: {}
+      before_install: skip
+      after_success: skip
+    - stage: test
+      env: TOX_ENV=linters
+      services: []
+      addons: {}
+      before_install: skip
+      after_success: skip
+    - stage: test
+      env: TOX_ENV=packaging
+      services: []
+      addons: {}
+      before_install: skip
+      after_success: skip
+
+    # NOTE: We undo many global Travis CI step definitions to ensure the
+    # following Tox environment only has access to the PostgreSQL service.
+    - stage: test
+      env:
+        - TOX_ENV=migrations
+        # Set environment variables with information how to use the PostgreSQL
+        # service.
+        - STRAINING_POSTGRESQL_USER=postgres
+        - STRAINING_POSTGRESQL_PORT=5432
+      services: []
+      before_install:
+        # NOTE: We need to manually reconfigure PostgreSQL 10 since Travis CI
+        # doesn't provide standard configuration out-of-the-box.
+        # For more details, see:
+        # https://github.com/travis-ci/travis-ci/issues/8537#issuecomment-416467506
+        - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf
+        - sudo cp /etc/postgresql/{9.6,10}/main/pg_hba.conf
+        - sudo service postgresql restart
+      after_success: skip
+
+    # NOTE: We undo all the global Travis CI step definitions to ensure
+    # building of source and wheel distributions is performed in a clean
+    # environment.
+    - stage: release
+      services: []
+      addons: {}
+      before_install: skip
+      install: skip
+      script: skip
+      # NOTE: Due to the way Travis CI currently works, setting
+      # 'after_success: skip' would also result in skipping the deploy step.
+      # A work-around is to execute a dummy echo command.
+      # More info at: https://github.com/travis-ci/travis-ci/issues/8337.
+      after_success: echo "Skipping..."
+      deploy:
+        provider: pypi
+        user: dblenkus-bot
+        password:
+          secure: "OFvlaSPvCVd2ecUtVk6c2dUdRq1pqRABARhVR2IUu1XjPewVrj16t8O1fmvWxv3fj3euB6T9pQw4Jz+EHHTUkP+TpNtHOnlZpxeguteYWEgU2TyhlsWt+hQKFtmffE/1g1y6oFYh7TK8cGfzU29Fbf3HV3VD7CnDbeJVuqyJP56a+JqpVxnyx6MfGhgeMxUdE2RYCq4Cwmsb28m1DBSGopNl5y0W5u3yh3hAu80Y6X/y164AMJmgfYD70Gk3tmmJmpxZuLVZP/I7lMy89tBXn6jsTDHpDwXu807iVNANe2sIp1nhtUYVQXqp6uswhT79rL1bNcP+UQ/N4Z/A0Tmw3ngQN08OjkvqCFnEgbGv/sd0oSm/wXKnYQIBRe9y2DAkTF877Z/kPG43CTnM695ePQsQpGa2R8Uo4nO/93rNlJCXO6VGKgsCmKV08HLc9mAyKRK32AAql3H6nV9bRnzbVD+BFhVM0NW+uHlMrz3bciReIaWLms+HxDcFbnGM/Uq3mgieZBAK+nUEXu8kPlyadXxyjgtAwkqyROuNUbwNquL7+gZbyMEULl7kWJV1JG1Mtd4FJ3XI1POekA7BHwAFAdtyHoHN2ddBR8earEfMHoy8ieuXwORCetKf0WHFdw60BSdDJtxtKUPJk/dgT1/TelV3SjxSPQBplnURor3hchI="
+        distributions: sdist bdist_wheel
+        on:
+          # Enable deploying tags. By default, Travis CI only deploys from the
+          # master branch.
+          tags: true
+      # Only build releases for tags starting with a Semantic Versioning 2.0
+      # compatible version.
+      if: tag =~ ^\d+\.\d+\.\d+
