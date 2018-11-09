@@ -38,7 +38,13 @@ setup(
     # exclude tests from built/installed package
     packages=find_packages(exclude=['tests', 'tests.*', '*.tests', '*.tests.*']),
     install_requires=[
+        'asgiref~=2.3.0',
+        'channels~=2.1.0',
+        'channels_redis~=2.3.0',
         'Django~=2.1.0',
+        'django-fernet-fields==0.5',
+        'djangorestframework~=3.9.0',
+        'requests~=2.19.1',
     ],
     python_requires='>=3.6, <3.8',
     extras_require={

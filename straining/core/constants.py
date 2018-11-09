@@ -1,0 +1,1 @@
+ACTIVITIES_MEDIA_PATH = 'activities'
