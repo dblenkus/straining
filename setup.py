@@ -1,42 +1,28 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+import os.path
+import setuptools
 
-"""Open source dataflow package for Django framework.
-See:
-https://github.com/dblenkus/straining
-"""
+# Get long description from README.
+with open('README.rst', 'r') as fh:
+    long_description = fh.read()
 
-from setuptools import find_packages, setup
-from os import path
-
-base_dir = path.abspath(path.dirname(__file__))
-
-# Get the long description from the README file
-with open(path.join(base_dir, 'README.rst')) as f:
-    long_description = f.read()
-
-# Get package metadata from 'straining.__about__.py' file
+# Get package metadata from '__about__.py' file.
 about = {}
-with open(path.join(base_dir, 'straining', '__about__.py')) as f:
-    exec(f.read(), about)
+base_dir = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(base_dir, 'straining', '__about__.py'), 'r') as fh:
+    exec(fh.read(), about)
 
-setup(
+setuptools.setup(
     name=about['__title__'],
-
     version=about['__version__'],
-
     description=about['__summary__'],
     long_description=long_description,
-
-    url=about['__url__'],
-
+    long_description_content_type='text/x-rst',
     author=about['__author__'],
     author_email=about['__email__'],
-
+    url=about['__url__'],
     license=about['__license__'],
-
-    # exclude tests from built/installed package
     packages=find_packages(exclude=['tests', 'tests.*', '*.tests', '*.tests.*']),
+    python_requires='>=3.6, <3.8',
     install_requires=[
         'asgiref~=2.3.0',
         'channels~=2.1.0',
@@ -46,17 +32,11 @@ setup(
         'djangorestframework~=3.9.0',
         'requests~=2.19.1',
     ],
-    python_requires='>=3.6, <3.8',
     extras_require={
-        'package': [
-            'twine',
-            'wheel',
-        ],
+        'package': ['twine', 'wheel'],
     },
-
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
-
         'Environment :: Web Environment',
         'Framework :: Django',
         'Intended Audience :: Other Audience',
@@ -65,16 +45,12 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: HTTP Servers',
         'Topic :: Software Development :: Libraries :: Application Frameworks',
         'Topic :: Software Development :: Libraries :: Python Modules',
-
         'License :: OSI Approved :: Apache Software License',
-
         'Operating System :: OS Independent',
-
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
-
     keywords='training cycling running',
 )
