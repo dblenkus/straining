@@ -1,14 +1,18 @@
 """Central place for package metadata."""
 
+from pkg_resources import DistributionNotFound, get_distribution
+
 # NOTE: We use __title__ instead of simply __name__ since the latter would
 #       interfere with a global variable __name__ denoting object's name.
 __title__ = 'straining'
 __summary__ = 'Application for cycling and running trainings'
 __url__ = 'https://github.com/dblenkus/straining'
 
-# Semantic versioning is used. For more information see:
-# https://packaging.python.org/en/latest/distributing/#semantic-versioning-preferred
-__version__ = '0.1.0a1'
+try:
+    __version__ = get_distribution(__title__).version
+except DistributionNotFound:
+    # Package is not (yet) installed.
+    pass
 
 __author__ = 'Domen Blenkuš'
 __email__ = 'domen@blenkus.com'
